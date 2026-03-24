@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InstantKit — AI Marketing Launch Pack Generator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0f11;--surface:#161a1e;--surface2:#1c2127;--border:#2a2f36;--text:#e8eaed;--text-dim:#9aa0a8;--teal:#00C2A8;--teal-hover:#00dbbe;--teal-glow:rgba(0,194,168,0.15);--red:#ff4d5a;--radius:12px;--font:'Segoe UI','Inter',system-ui,-apple-system,sans-serif}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+a{color:var(--teal);text-decoration:none}
+a:hover{color:var(--teal-hover)}
+
+/* ========== PASSWORD GATE ========== */
+#password-gate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease}
+#password-gate.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.gate-box{text-align:center;max-width:420px;width:90%;padding:48px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 0 60px rgba(0,194,168,0.08)}
+.gate-logo{font-size:2rem;font-weight:800;letter-spacing:-0.5px;color:var(--text);margin-bottom:6px}
+.gate-logo span{color:var(--teal)}
+.gate-tagline{font-size:0.9rem;color:var(--text-dim);margin-bottom:32px}
+.gate-input-wrap{position:relative;margin-bottom:16px}
+.gate-input-wrap input{width:100%;padding:14px 18px;font-size:1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color 0.2s}
+.gate-input-wrap input:focus{border-color:var(--teal)}
+.gate-btn{width:100%;padding:14px;font-size:1rem;font-weight:700;letter-spacing:0.5px;background:var(--teal);color:#000;border:none;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.1s}
+.gate-btn:hover{background:var(--teal-hover)}
+.gate-btn:active{transform:scale(0.98)}
+.gate-error{color:var(--red);font-size:0.85rem;margin-top:12px;min-height:20px}
+.gate-purchase{font-size:0.8rem;color:var(--text-dim);margin-top:20px}
+.gate-purchase a{color:var(--teal)}
+
+/* ========== MAIN APP ========== */
+#app{display:none;opacity:0;transition:opacity 0.6s ease}
+#app.visible{display:block;opacity:1}
+
+/* Header */
+.header{text-align:center;padding:48px 20px 32px;border-bottom:1px solid var(--border)}
+.header-logo{font-size:2.4rem;font-weight:800;letter-spacing:-0.5px}
+.header-logo span{color:var(--teal)}
+.header-tagline{font-size:1.05rem;color:var(--text-dim);margin-top:6px}
+
+/* Container */
+.container{max-width:800px;margin:0 auto;padding:32px 20px 80px}
+
+/* Section titles */
+.section-title{font-size:0.8rem;font-weight:700;letter-spacing:1.5px;color:var(--teal);text-transform:uppercase;margin-bottom:16px}
+
+/* API Key */
+.api-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:28px}
+.api-section label{display:block;font-size:0.85rem;color:var(--text-dim);margin-bottom:8px}
+.api-row{display:flex;gap:10px}
+.api-row input{flex:1;padding:12px 16px;font-size:0.95rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;font-family:monospace;transition:border-color 0.2s}
+.api-row input:focus{border-color:var(--teal)}
+.api-save-btn{padding:12px 20px;font-size:0.85rem;font-weight:700;background:var(--surface2);color:var(--teal);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background 0.2s,border-color 0.2s;white-space:nowrap}
+.api-save-btn:hover{background:var(--teal-glow);border-color:var(--teal)}
+.api-status{font-size:0.8rem;margin-top:8px;min-height:18px}
+.api-status.saved{color:var(--teal)}
+.api-status.error{color:var(--red)}
+
+/* Form */
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:28px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column}
+.form-group label{font-size:0.85rem;color:var(--text-dim);margin-bottom:6px}
+.form-group input{padding:12px 16px;font-size:0.95rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--teal)}
+.form-group.full{grid-column:1/-1}
+.generate-btn{width:100%;margin-top:20px;padding:16px;font-size:1.1rem;font-weight:800;letter-spacing:0.5px;background:var(--teal);color:#000;border:none;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.1s}
+.generate-btn:hover{background:var(--teal-hover)}
+.generate-btn:active{transform:scale(0.98)}
+.generate-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Loading */
+.loader-wrap{display:none;text-align:center;padding:60px 20px}
+.loader-wrap.active{display:block}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{color:var(--text-dim);font-size:0.95rem}
+.loader-sub{color:var(--text-dim);font-size:0.8rem;margin-top:6px;opacity:0.7}
+
+/* Output */
+#output-area{display:none}
+#output-area.active{display:block}
+.output-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;overflow:hidden}
+.output-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.output-header h3{font-size:0.95rem;font-weight:700;color:var(--text)}
+.copy-btn{padding:8px 16px;font-size:0.8rem;font-weight:600;background:transparent;color:var(--teal);border:1px solid var(--teal);border-radius:6px;cursor:pointer;transition:all 0.2s}
+.copy-btn:hover{background:var(--teal);color:#000}
+.copy-btn.copied{background:var(--teal);color:#000}
+.output-content{padding:20px;white-space:pre-wrap;font-size:0.9rem;line-height:1.7;color:var(--text-dim);max-height:500px;overflow-y:auto}
+.output-content::-webkit-scrollbar{width:6px}
+.output-content::-webkit-scrollbar-track{background:var(--surface)}
+.output-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Error */
+.error-msg{background:rgba(255,77,90,0.1);border:1px solid var(--red);border-radius:var(--radius);padding:20px;color:var(--red);margin-bottom:20px;display:none}
+.error-msg.active{display:block}
+
+/* Footer */
+.footer{text-align:center;padding:32px 20px;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.8rem}
+
+/* Responsive */
+@media(max-width:600px){
+  .header{padding:32px 16px 24px}
+  .header-logo{font-size:1.8rem}
+  .container{padding:24px 16px 60px}
+  .api-row{flex-direction:column}
+  .gate-box{padding:36px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== PASSWORD GATE ========== -->
+<div id="password-gate">
+  <div class="gate-box">
+    <div class="gate-logo">Instant<span>Kit</span></div>
+    <div class="gate-tagline">Your entire local marketing launch. In 30 seconds.</div>
+    <div class="gate-input-wrap">
+      <input type="password" id="gate-password" placeholder="Enter access code" autocomplete="off">
+    </div>
+    <button class="gate-btn" id="gate-unlock" onclick="attemptUnlock()">UNLOCK ACCESS</button>
+    <div class="gate-error" id="gate-error"></div>
+    <div class="gate-purchase">Purchase access at <a href="https://gumroad.com/l/xoewvf" target="_blank">gumroad.com/l/xoewvf</a></div>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">Instant<span>Kit</span></div>
+    <div class="header-tagline">Your entire local marketing launch. In 30 seconds.</div>
+  </div>
+
+  <div class="container">
+
+    <!-- API Key -->
+    <div class="section-title">API Configuration</div>
+    <div class="api-section">
+      <label>Anthropic API Key</label>
+      <div class="api-row">
+        <input type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off">
+        <button class="api-save-btn" onclick="saveApiKey()">Save Key</button>
+      </div>
+      <div class="api-status" id="api-status"></div>
+    </div>
+
+    <!-- Business Info Form -->
+    <div class="section-title">Business Information</div>
+    <div class="form-section">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Business Name</label>
+          <input type="text" id="biz-name" placeholder="e.g. Apex Plumbing">
+        </div>
+        <div class="form-group">
+          <label>Business Type</label>
+          <input type="text" id="biz-type" placeholder="e.g. Plumbing Company">
+        </div>
+        <div class="form-group">
+          <label>City / Service Area</label>
+          <input type="text" id="biz-city" placeholder="e.g. Austin, TX">
+        </div>
+        <div class="form-group">
+          <label>Main Offer</label>
+          <input type="text" id="biz-offer" placeholder="e.g. $50 Off First Service Call">
+        </div>
+      </div>
+      <button class="generate-btn" id="generate-btn" onclick="generateKit()">GENERATE MY LAUNCH KIT</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loader-wrap" id="loader">
+      <div class="spinner"></div>
+      <div class="loader-text">Generating your marketing launch pack...</div>
+      <div class="loader-sub">This usually takes 20–40 seconds</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- Output -->
+    <div id="output-area">
+      <div class="section-title">Your Marketing Launch Pack</div>
+
+      <div class="output-block">
+        <div class="output-header">
+          <h3>1. Landing Page (Full HTML)</h3>
+          <button class="copy-btn" onclick="copySection(this, 'out-landing')">Copy</button>
+        </div>
+        <div class="output-content" id="out-landing"></div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-header">
+          <h3>2. Google &amp; Microsoft Ad Copy</h3>
+          <button class="copy-btn" onclick="copySection(this, 'out-ads')">Copy</button>
+        </div>
+        <div class="output-content" id="out-ads"></div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-header">
+          <h3>3. 5-Email Cold Outreach Sequence</h3>
+          <button class="copy-btn" onclick="copySection(this, 'out-email')">Copy</button>
+        </div>
+        <div class="output-content" id="out-email"></div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-header">
+          <h3>4. Social Media Pack</h3>
+          <button class="copy-btn" onclick="copySection(this, 'out-social')">Copy</button>
+        </div>
+        <div class="output-content" id="out-social"></div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-header">
+          <h3>5. Local SEO Starter Pack</h3>
+          <button class="copy-btn" onclick="copySection(this, 'out-seo')">Copy</button>
+        </div>
+        <div class="output-content" id="out-seo"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    InstantKit &mdash; Built for local businesses that move fast.<br>
+    <a href="https://gumroad.com/l/xoewvf" target="_blank">Get access</a> &middot; Powered by Claude AI
+  </div>
+</div>
+
+<script>
+// ========== PASSWORD GATE ==========
+const CORRECT_PASSWORD = 'INSTANTKIT2026';
+
+(function checkUnlocked() {
+  if (localStorage.getItem('instantkit_unlocked') === 'true') {
+    document.getElementById('password-gate').classList.add('hidden');
+    const app = document.getElementById('app');
+    app.style.display = 'block';
+    setTimeout(() => app.classList.add('visible'), 30);
+  }
+})();
+
+document.getElementById('gate-password').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptUnlock();
+});
+
+function attemptUnlock() {
+  const pw = document.getElementById('gate-password').value.trim();
+  const errEl = document.getElementById('gate-error');
+  if (pw === CORRECT_PASSWORD) {
+    localStorage.setItem('instantkit_unlocked', 'true');
+    document.getElementById('password-gate').classList.add('hidden');
+    const app = document.getElementById('app');
+    app.style.display = 'block';
+    setTimeout(() => app.classList.add('visible'), 30);
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = 'Incorrect access code. Please try again.';
+    document.getElementById('gate-password').value = '';
+    document.getElementById('gate-password').focus();
+  }
+}
+
+// ========== API KEY ==========
+(function loadApiKey() {
+  const saved = localStorage.getItem('instantkit_api_key');
+  if (saved) {
+    document.getElementById('api-key').value = saved;
+    const status = document.getElementById('api-status');
+    status.textContent = 'API key loaded from saved data.';
+    status.className = 'api-status saved';
+  }
+})();
+
+function saveApiKey() {
+  const key = document.getElementById('api-key').value.trim();
+  const status = document.getElementById('api-status');
+  if (!key) {
+    status.textContent = 'Please enter a valid API key.';
+    status.className = 'api-status error';
+    return;
+  }
+  localStorage.setItem('instantkit_api_key', key);
+  status.textContent = 'API key saved successfully.';
+  status.className = 'api-status saved';
+}
+
+// ========== GENERATE ==========
+const SYSTEM_PROMPT = `You are a local business marketing expert. When given a business name, type, city, and main offer — you generate a complete marketing launch pack. Format your response in clearly labeled sections using ALL CAPS headers:
+
+LANDING PAGE HTML
+(Full, complete HTML page — dark mode, professional, ready to deploy to Netlify)
+
+GOOGLE + MICROSOFT AD COPY
+(5 headlines, 3 descriptions, formatted and ready to paste)
+
+5-EMAIL COLD OUTREACH SEQUENCE
+(Subject line, preview text, and full body for all 5 emails)
+
+SOCIAL MEDIA PACK
+(3 Instagram captions, 2 Facebook posts, 1 Twitter/X post, 1 TikTok/Reels script hook)
+
+LOCAL SEO STARTER
+(Google Business Profile description, 10 keyword targets, 5 FAQ entries, 1 directory bio)
+
+Be specific, professional, and make every piece feel custom to the business provided.`;
+
+async function generateKit() {
+  const apiKey = document.getElementById('api-key').value.trim() || localStorage.getItem('instantkit_api_key');
+  const bizName = document.getElementById('biz-name').value.trim();
+  const bizType = document.getElementById('biz-type').value.trim();
+  const bizCity = document.getElementById('biz-city').value.trim();
+  const bizOffer = document.getElementById('biz-offer').value.trim();
+
+  // Validation
+  if (!apiKey) {
+    showError('Please enter and save your Anthropic API key first.');
+    return;
+  }
+  if (!bizName || !bizType || !bizCity || !bizOffer) {
+    showError('Please fill in all four business fields.');
+    return;
+  }
+
+  // Save API key
+  localStorage.setItem('instantkit_api_key', apiKey);
+
+  // UI states
+  hideError();
+  document.getElementById('output-area').classList.remove('active');
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('generate-btn').disabled = true;
+  document.getElementById('generate-btn').textContent = 'GENERATING...';
+
+  const userMessage = `Business Name: ${bizName}\nBusiness Type: ${bizType}\nCity / Service Area: ${bizCity}\nMain Offer: ${bizOffer}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `API returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const fullText = data.content[0].text;
+
+    // Parse sections
+    const sections = parseSections(fullText);
+    document.getElementById('out-landing').textContent = sections.landing;
+    document.getElementById('out-ads').textContent = sections.ads;
+    document.getElementById('out-email').textContent = sections.email;
+    document.getElementById('out-social').textContent = sections.social;
+    document.getElementById('out-seo').textContent = sections.seo;
+
+    document.getElementById('loader').classList.remove('active');
+    document.getElementById('output-area').classList.add('active');
+    document.getElementById('output-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    document.getElementById('loader').classList.remove('active');
+    showError('Generation failed: ' + err.message);
+  }
+
+  document.getElementById('generate-btn').disabled = false;
+  document.getElementById('generate-btn').textContent = 'GENERATE MY LAUNCH KIT';
+}
+
+function parseSections(text) {
+  const result = { landing: '', ads: '', email: '', social: '', seo: '' };
+
+  // Define section markers and their keys
+  const markers = [
+    { key: 'landing', patterns: ['LANDING PAGE HTML', 'LANDING PAGE'] },
+    { key: 'ads', patterns: ['GOOGLE + MICROSOFT AD COPY', 'GOOGLE AND MICROSOFT AD COPY', 'AD COPY'] },
+    { key: 'email', patterns: ['5-EMAIL COLD OUTREACH SEQUENCE', 'EMAIL COLD OUTREACH', 'COLD OUTREACH SEQUENCE', 'EMAIL OUTREACH'] },
+    { key: 'social', patterns: ['SOCIAL MEDIA PACK', 'SOCIAL MEDIA'] },
+    { key: 'seo', patterns: ['LOCAL SEO STARTER', 'LOCAL SEO'] }
+  ];
+
+  // Find positions of each section
+  const positions = [];
+  for (const marker of markers) {
+    let bestPos = -1;
+    for (const pattern of marker.patterns) {
+      const idx = text.indexOf(pattern);
+      if (idx !== -1 && (bestPos === -1 || idx < bestPos)) {
+        bestPos = idx;
+      }
+    }
+    if (bestPos !== -1) {
+      positions.push({ key: marker.key, pos: bestPos });
+    }
+  }
+
+  // Sort by position
+  positions.sort((a, b) => a.pos - b.pos);
+
+  // Extract text between sections
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].pos;
+    const end = i + 1 < positions.length ? positions[i + 1].pos : text.length;
+    let sectionText = text.substring(start, end).trim();
+    // Remove the header line itself
+    const newlineIdx = sectionText.indexOf('\n');
+    if (newlineIdx !== -1) {
+      sectionText = sectionText.substring(newlineIdx).trim();
+    }
+    result[positions[i].key] = sectionText;
+  }
+
+  // Fallback: if parsing failed, put everything in landing
+  if (!result.landing && !result.ads && !result.email && !result.social && !result.seo) {
+    result.landing = text;
+  }
+
+  return result;
+}
+
+// ========== COPY ==========
+function copySection(btn, elementId) {
+  const text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ========== ERROR ==========
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('active');
+}
+function hideError() {
+  const el = document.getElementById('error-msg');
+  el.textContent = '';
+  el.classList.remove('active');
+}
+</script>
+</body>
+</html>
